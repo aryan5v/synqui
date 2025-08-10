@@ -18,7 +18,11 @@ void main() {
 `;
 
 const waveFragmentShader = `
+#ifdef GL_FRAGMENT_PRECISION_HIGH
 precision highp float;
+#else
+precision mediump float;
+#endif
 uniform vec2 resolution;
 uniform float time;
 uniform float waveSpeed;
@@ -114,7 +118,11 @@ void main() {
 `;
 
 const ditherFragmentShader = `
+#ifdef GL_FRAGMENT_PRECISION_HIGH
 precision highp float;
+#else
+precision mediump float;
+#endif
 uniform float colorNum;
 uniform float pixelSize;
 const float bayerMatrix8x8[64] = float[64](
@@ -345,6 +353,18 @@ function getTimeBasedColor(): [number, number, number] {
     }
 }
 
+// Check WebGL support (Safari compatibility)
+function isWebGLSupported() {
+    if (typeof window === "undefined") return true; // SSR fallback
+    try {
+        const canvas = document.createElement('canvas');
+        const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+        return !!gl;
+    } catch {
+        return false;
+    }
+}
+
 export default function Dither({
     waveSpeed = 0.05,
     waveFrequency = 3,
@@ -359,6 +379,7 @@ export default function Dither({
     dynamicColors = false,
 }: DitherProps) {
     const dpr = typeof window !== "undefined" ? window.devicePixelRatio : 1;
+    const webGLSupported = isWebGLSupported();
     const [currentColor, setCurrentColor] = useState<[number, number, number]>(
         dynamicColors ? getTimeBasedColor() : waveColor
     );
@@ -378,12 +399,36 @@ export default function Dither({
             clearInterval(interval);
         };
     }, [dynamicColors]);
+
+    // Fallback for browsers without WebGL support
+    if (!webGLSupported) {
+        return (
+            <div
+                className={className ?? "w-full h-full"}
+                style={{
+                    background: '#d946ef', // Pink-500 background
+                    backgroundImage: `
+            radial-gradient(circle at 25% 25%, rgba(0,0,0,0.1) 2px, transparent 2px),
+            radial-gradient(circle at 75% 75%, rgba(0,0,0,0.05) 1px, transparent 1px)
+          `,
+                    backgroundSize: '20px 20px, 40px 40px'
+                }}
+            />
+        );
+    }
+
     return (
         <Canvas
             className={className ?? "w-full h-full"}
             camera={{ position: [0, 0, 6] }}
-            dpr={dpr}
-            gl={{ antialias: true, preserveDrawingBuffer: true }}
+            dpr={Math.min(dpr, 2)} // Limit DPR for Safari performance
+            gl={{
+                antialias: true,
+                preserveDrawingBuffer: true,
+                powerPreference: "high-performance",
+                alpha: true,
+                premultipliedAlpha: false
+            }}
         >
             <DitheredWaves
                 waveSpeed={waveSpeed}
