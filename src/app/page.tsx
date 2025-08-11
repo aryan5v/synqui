@@ -1,23 +1,21 @@
-import Dither from "../components/Dither";
+import Threads from "../components/Threads";
 import TextPressure from "../components/TextPressure";
 
 export default function Home() {
   return (
     <main className="relative min-h-dvh flex items-center justify-center overflow-hidden">
-      {/* Cool gradient background */}
+      {/* Cool threads background */}
       <div className="absolute inset-0 -z-20">
-        <Dither
-          className="w-full h-full"
-          enableMouseInteraction={false}
-          dynamicColors={false}
-          waveColor={[0.6, 0.3, 0.9]}
-          waveSpeed={0.02}
-          waveAmplitude={0.5}
-        />
+        <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+          <Threads
+            amplitude={1}
+            distance={0}
+            enableMouseInteraction={true}
+          />
+        </div>
       </div>
 
-      {/* Full-screen glassmorphism overlay */}
-      <div className="absolute inset-0 bg-black/15 backdrop-blur-[2px] -z-10"></div>
+
 
       <section className="w-full max-w-[920px] px-6 md:px-10">
         <div className="flex flex-col items-center text-center gap-6 md:gap-8 text-white">
